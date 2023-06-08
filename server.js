@@ -1,4 +1,5 @@
 const express = require('express')
+const cors = require("cors");
 const dbConnect= require('./database/index')
 const {PORT}= require("./config/index");
 const router= require("./routes/index");
@@ -7,6 +8,7 @@ const port = PORT
 
 
 dbConnect();
+app.use(cors());
 app.use(express.json());
 app.use(router);
 app.get('/', (req, res) => {

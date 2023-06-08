@@ -35,7 +35,10 @@ const propertySchema= Schema({
         require:true,
         type:Number
     },
-    
+    propertyImages:{
+        require:true,
+        type:Array
+    }
 },
 {timestamps:true}
 );

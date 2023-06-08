@@ -2,15 +2,29 @@ const Admin = require('../models/adminSchema');
 const Agent = require('../models/agentSchema');
 const Property = require('../models/propertySchema');
 const Project = require('../models/projectSchema');
-
+const fs = require('fs');
+const path = require('path');
+const { v4: uuidv4 } = require('uuid');
+const AWS = require('aws-sdk');
+const spacesEndpoint = new AWS.Endpoint('nyc3.digitaloceanspaces.com');
+const s3 = new AWS.S3({
+  endpoint: spacesEndpoint,
+  accessKeyId: 'DO00VEVHP872BQHADNCW',
+  secretAccessKey: 'WT1H8ePdR4p8+yoLJsZ6qpod7q0gcBcJ+8kcFx34d2s',
+  s3ForcePathStyle: true,
+});
 const authController={
     async signup(req, res,next) {
         try {
             // Logic for adding an agent
             const adminData = req.body;
-            const admin = await Admin.create(adminData);
-      
-            return res.status(201).json(admin);
+            const {username} = req.body;
+            const checkExists= await Admin.find({username});
+            if(!checkExists){
+              const admin = await Admin.create(adminData);
+              return res.status(201).json(admin);
+            }
+            return res.status(201).json({message:"Admin already exists"});
           } catch (error) {
             next(error);
           }
@@ -43,14 +57,61 @@ const authController={
       async addAgent(req, res, next) {
         try {
           // Logic for adding an agent
-          const agentData = req.body;
-    
-          const agent = await Agent.create(agentData);
-    
-          return res.status(201).json(agent);
+          if (!req.files || Object.keys(req.files).length === 0) {
+            return res.status(400).json({ error: 'No file uploaded' });
+          }
+      
+          const file = req.files.profileImage[0];
+          // Read the file data and convert it to a buffer
+          const fileData = fs.readFileSync(file.path);
+      
+          // Generate a unique filename or use any other logic to determine the filename
+          const filename = `${uuidv4()}${path.extname(file.originalname)}`;
+          
+          // Upload the file to DigitalOcean Spaces
+          const params = {
+            Body: fileData, // Pass the fileData buffer as the Body parameter
+            Bucket: 'technician',
+            Key: filename
+          };
+      
+          s3.putObject(params,async function(err, data) {
+            if (err) {
+              res.status(500).json({ error: err.message });
+            } else {
+              const agentData = req.body;
+              const updatedAgentData = {
+                ...agentData, // Copy all properties from agentData
+                profilePicture: "https://dolphin-app-ldyyx.ondigitalocean.app/image/"+filename // Update the profileImage property
+              };
+              fs.unlinkSync(file.path);
+              const agent = await Agent.create(updatedAgentData);
+              return res.status(201).json(agent);
+            }
+          });
+          
         } catch (error) {
           next(error);
         }
+      },
+
+      async getAgentProfilePicture(req, res, next) {
+        const bucketName = 'technician';
+        const imageKey = `${req.params.imageName}`;
+        const imageStream = fs.createWriteStream(imageKey);
+        const getObjectParams = { Bucket: bucketName, Key: imageKey };
+        const s3Stream = s3.getObject(getObjectParams).createReadStream();
+        s3Stream.pipe(imageStream)
+          .on('error', (err) => {
+            res.status(501).send('Internal Server Error');
+          })
+          .on('close', () => {
+            res.sendFile(imageKey, { root: __dirname }, (err) => {
+              if (err) {
+                res.status(500).send('Internal Server Error');
+              }
+            });
+          });
       },
     
       async deleteAgent(req, res, next) {
@@ -120,20 +181,48 @@ const authController={
           next(error);
         }
       },
-    
       async addProperty(req, res, next) {
         try {
           // Logic for adding a property
           const propertyData = req.body;
-    
+      
+          // Check if there are any files uploaded
+          if (req.files && req.files.length > 0) {
+            const propertyImages = [];
+      
+            // Process each uploaded file
+            for (const file of req.files) {
+              const fileData = fs.readFileSync(file.path);
+              const filename = `${uuidv4()}${path.extname(file.originalname)}`;
+      
+              // Upload the file to DigitalOcean Spaces
+              const params = {
+                Body: fileData,
+                Bucket: 'technician',
+                Key: filename
+              };
+      
+              await s3.putObject(params).promise();
+      
+              // Add the image URL to the propertyImages array
+              propertyImages.push(`https://dolphin-app-ldyyx.ondigitalocean.app/image/${filename}`);
+      
+              // Remove the uploaded file
+              fs.unlinkSync(file.path);
+            }
+      
+            // Add the propertyImages array to the propertyData object
+            propertyData.propertyImages = propertyImages;
+          }
+      
           const property = await Property.create(propertyData);
-    
+      
           return res.status(201).json(property);
         } catch (error) {
           next(error);
         }
       },
-    async deleteProperty(req,res,next){
+      async deleteProperty(req,res,next){
         try {
             // Logic for deleting an agent
             const propertyId = req.params.id;
@@ -148,7 +237,7 @@ const authController={
           } catch (error) {
             next(error);
           }
-    },
+        },
     async updateProperty(req,res,next){
         try {
             // Logic for updating an agent
