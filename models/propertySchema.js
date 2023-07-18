@@ -38,9 +38,11 @@ const propertySchema= Schema({
     propertyImages:{
         require:true,
         type:Array
-    }
+    },
+
 },
 {timestamps:true}
 );
 
 module.exports=mongoose.model('propertySchema',propertySchema);
+

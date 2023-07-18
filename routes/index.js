@@ -1,6 +1,7 @@
 const express= require('express');
 const router=express.Router();
 const authController=require('../controller/authController')
+const userController=require('../controller/userController')
 const multer = require('multer');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
@@ -67,5 +68,36 @@ router.put('/updateProject/:id',authController.updateProject)
 router.delete('/deleteProject/:id',authController.deleteProject)
 //getall
 router.get('/getAllProject',authController.getAllProject)
+
+
+//questions
+//create
+router.post('/createQuestion',authController.addQuestions)
+//read
+router.get('/updateQuestion/:id',authController.updateQuestions)
+//delete
+router.delete('/deleteQuestion/:id',authController.deleteQuestions)
+//getall
+router.get('/getAllQuestion',authController.getAllQuestions)
+
+//User
+//create
+router.post('/createUser',userController.createUser)
+//read
+router.put('/updateUser/:id',userController.updateUser)
+//delete
+router.delete('/deleteUser/:id',userController.deleteUser)
+//getall
+router.get('/getUser/:id',userController.getUser)
+//login
+router.post('/loginUser',userController.login)
+//logout
+router.post('/logoutUser',userController.logout)
+
+
+
+
+
+
 
 module.exports=router;

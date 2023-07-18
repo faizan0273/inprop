@@ -2,6 +2,7 @@ const Admin = require('../models/adminSchema');
 const Agent = require('../models/agentSchema');
 const Property = require('../models/propertySchema');
 const Project = require('../models/projectSchema');
+const Question = require('../models/questionSchema');
 const fs = require('fs');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
@@ -363,7 +364,51 @@ const authController={
           next(error);
         }
   },
-    
+
+  async addQuestions(req,res,next){
+    try {
+      const { question, options } = req.body;
+      await Question.create({ question, options });
+      res.status(200).json({message:"Added"});
+    } catch (err) {
+      res.status(500).json({ error: 'Error creating the question' });
+    }
+  },
+
+  async getAllQuestions(req, res, next) {
+    try {
+      const questions = await Question.find({}, 'question options _id');
+      res.status(200).json(questions);
+    } catch (err) {
+      res.status(500).json({ error: 'Error fetching questions' });
+    }
+  },
+  
+  async updateQuestions(req,res,next){
+    try {
+      const { question, options } = req.body;
+      const updatedQuestion = await Question.findByIdAndUpdate(req.params.id, { question, options }, { new: true });
+      if (!updatedQuestion) {
+        return res.status(404).json({ error: 'Question not found' });
+      }
+      res.status(200).json(updatedQuestion);
+    } catch (err) {
+      res.status(500).json({ error: 'Error updating the question' });
+    }
+  },
+
+  async deleteQuestions(req,res,next){
+    try {
+      const deletedQuestion = await Question.findByIdAndDelete(req.params.id);
+      if (!deletedQuestion) {
+        return res.status(404).json({ error: 'Question not found' });
+      }
+      res.status(200).json({ message: 'Question deleted successfully' });
+    } catch (err) {
+      res.status(500).json({ error: 'Error deleting the question' });
+    }
+  }
+
 }
 
 module.exports=authController;
