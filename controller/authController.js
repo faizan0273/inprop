@@ -215,7 +215,7 @@ const authController={
             // Add the propertyImages array to the propertyData object
             propertyData.propertyImages = propertyImages;
           }
-      
+          propertyData.verified=true;
           const property = await Property.create(propertyData);
       
           return res.status(201).json(property);
@@ -406,6 +406,16 @@ const authController={
       res.status(200).json({ message: 'Question deleted successfully' });
     } catch (err) {
       res.status(500).json({ error: 'Error deleting the question' });
+    }
+  },
+
+  async verifyProperty(req,res){
+    const { id } = req.params;
+    try {
+      const verifyProperty= await Property.findByIdAndUpdate(id, {verified:true}, { new: true });
+      res.status(500).json({ error: 'Property verified' });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
     }
   }
 

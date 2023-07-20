@@ -56,6 +56,8 @@ router.put('/updateProperty/:id',authController.updateProperty)
 router.delete('/deleteProperty/:id',authController.deleteProperty)
 //getall
 router.get('/getAllProperty',authController.getAllProperty)
+//verify property
+router.put('/verifyProperty/:id',authController.verifyProperty)
 
 //project
 //create
@@ -93,6 +95,12 @@ router.get('/getUser/:id',userController.getUser)
 router.post('/loginUser',userController.login)
 //logout
 router.post('/logoutUser',userController.logout)
+//submitAnswersByInvestor
+router.post('/submitAnswersByInvestor',userController.submitAnswersByInvestor)
+//getAnswersForSourcer
+router.get('/getAnswersForSourcer',userController.getAnswersForSourcer)
+//addPropertyByUser
+router.post('/addPropertyByUser', upload.array('propertyImages', 5), userController.addProperty);
 
 
 

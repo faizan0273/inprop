@@ -1,3 +1,4 @@
+const { boolean, bool } = require('joi');
 const mongoose= require('mongoose');
 
 const {Schema}= mongoose;
@@ -39,6 +40,10 @@ const propertySchema= Schema({
         require:true,
         type:Array
     },
+    verified:{
+        require:true,
+        type:Boolean
+    }
 
 },
 {timestamps:true}

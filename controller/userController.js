@@ -1,5 +1,7 @@
 const User = require('../models/userSchema');
-
+const Answer = require('../models/investorAnswerSchema');
+const Question = require('../models/questionSchema');
+const Property = require('../models/propertySchema');
 const userController = {
   async createUser(req, res, next) {
     try {
@@ -31,7 +33,46 @@ const userController = {
       next(error);
     }
   },
-
+  async addProperty(req, res, next) {
+    try {
+      // Logic for adding a property
+      const propertyData = req.body;
+  
+      // Check if there are any files uploaded
+      if (req.files && req.files.length > 0) {
+        const propertyImages = [];
+  
+        // Process each uploaded file
+        for (const file of req.files) {
+          const fileData = fs.readFileSync(file.path);
+          const filename = `${uuidv4()}${path.extname(file.originalname)}`;
+  
+          // Upload the file to DigitalOcean Spaces
+          const params = {
+            Body: fileData,
+            Bucket: 'technician',
+            Key: filename
+          };
+  
+          await s3.putObject(params).promise();
+  
+          // Add the image URL to the propertyImages array
+          propertyImages.push(`https://dolphin-app-ldyyx.ondigitalocean.app/image/${filename}`);
+  
+          // Remove the uploaded file
+          fs.unlinkSync(file.path);
+        }
+        // Add the propertyImages array to the propertyData object
+        propertyData.propertyImages = propertyImages;
+      }
+      propertyData.verified=false;
+      const property = await Property.create(propertyData);
+  
+      return res.status(201).json(property);
+    } catch (error) {
+      next(error);
+    }
+  },
   async updateUser(req, res, next) {
     try {
       const { id } = req.params;
@@ -91,6 +132,74 @@ const userController = {
       res.status(500).json({ error: 'Internal server error' });
     }
   },
+
+  async submitAnswersByInvestor(req,res){
+    const { investorId, questionId, answer } = req.body;
+
+    try {
+      // Check if the user is an investor
+      const investor = await User.findById(investorId);
+      if (!investor || investor.type !== 'investor') {
+        return res.status(401).json({ error: 'Only investors can submit answers.' });
+      }
+  
+      // Check if the question exists
+      const question = await Question.findById(questionId);
+      if (!question) {
+        return res.status(404).json({ error: 'Question not found.' });
+      }
+  
+      // Save the answer
+      const newAnswer = new Answer({
+        question: questionId,
+        answer: answer,
+        investor: investorId,
+      });
+      await newAnswer.save();
+  
+      // Associate the answer with the question
+      question.answer = newAnswer._id;
+      await question.save();
+  
+      res.status(201).json({ message: 'Answer submitted successfully.' });
+    } catch (error) {
+      res.status(500).json({ error: 'An error occurred while processing the request.' });
+    }
+  },
+
+// Assuming you have already defined the necessary models and middleware
+
+async getAnswersForSourcer(req, res) {
+  try {
+    // Find all answers and populate their associated questions and investors
+    const answers = await Answer.find()
+      .populate({
+        path: 'question',
+        select: 'question options -_id', // Select question text and options and exclude _id
+      })
+      .populate({
+        path: 'investor',
+        select: 'name -_id', // Select investor's name and exclude _id
+      });
+
+    // Process the data to show only the relevant information to sourcers
+    const questionsAndAnswers = answers.map((answer) => {
+      return {
+        question: answer.question.question,
+        options: answer.question.options,
+        answer: answer.answer,
+        investor: answer.investor.name,
+      };
+    });
+
+    res.status(200).json(questionsAndAnswers);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+}
+
+
+
 };
 
 module.exports = userController;
