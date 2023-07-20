@@ -196,7 +196,22 @@ async getAnswersForSourcer(req, res) {
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
-}
+},
+
+async getAllProperty(req,res,next){
+  try {
+
+      const property = await Property.find({ verified: true });
+
+      if (!property) {
+        return res.status(404).json({ error: 'Property not found' });
+      }
+
+      return res.status(200).json(property);
+    } catch (error) {
+      next(error);
+    }
+},
 
 
 

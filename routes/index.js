@@ -101,6 +101,8 @@ router.post('/submitAnswersByInvestor',userController.submitAnswersByInvestor)
 router.get('/getAnswersForSourcer',userController.getAnswersForSourcer)
 //addPropertyByUser
 router.post('/addPropertyByUser', upload.array('propertyImages', 5), userController.addProperty);
+// get property by user
+router.get('/getAllPropertyByUser',userController.getAllProperty)
 
 
 
